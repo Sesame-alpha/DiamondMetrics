@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiamondMetrics💎 — Diamond Export & Production Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --blue: #2f5d8a;
+    --blue-bright: #4a90d9;
+    --blue-soft: #e7f0fa;
+    --grey: #6b7280;
+    --grey-light: #eef0f3;
+    --bg: #ffffff;
+    --surface: #fafbfc;
+    --border: #e3e6ea;
+    --text: #232a33;
+    --muted: #7a8694;
+    --radius: 10px;
+  }
+
+  *{ box-sizing: border-box; margin: 0; padding: 0; }
+  html{ background: var(--bg); overflow-x: hidden; }
+
+  body{
+    font-family: 'Inter', -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  header{
+    background: #fff;
+    text-align: center;
+    padding: 64px 20px 24px;
+    border-bottom: 5px solid var(--blue-bright);
+  }
+
+  header h1{
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(2rem, 8vw, 3.2rem);
+    letter-spacing: 0.01em;
+    color: var(--blue);
+    word-break: keep-all;
+  }
+
+  header p{
+    margin-top: 10px;
+    font-size: 1.1rem;
+    color: var(--muted);
+  }
+
+  main{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+  }
+
+  .intro{
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  .intro strong{ color: var(--blue); }
+
+  .kpi-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  @media (min-width: 600px){
+    .kpi-grid{ grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .kpi-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--blue);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .kpi-card.grey{ border-left-color: var(--grey); }
+
+  .kpi-label{
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .kpi-value{ font-size: 1.5rem; font-weight: 700; color: var(--blue); }
+  .kpi-card.grey .kpi-value{ color: var(--grey); }
+  .kpi-sub{ font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+  .panel{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .panel h2{
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.15rem;
+    margin-bottom: 10px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+
+  .chart-wrap{ position: relative; height: 220px; }
+  .chart-wrap.small{ height: 180px; }
+
+  .panel-row{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  @media (min-width: 600px){
+    .panel-row{ grid-template-columns: 1fr 1fr; }
+    .panel-row .panel{ margin-bottom: 0; }
+  }
+
+  .filter-row{
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn{
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .filter-btn.active{
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+
+  .table-scroll{ overflow-x: auto; }
+
+  table{ width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+
+  th, td{
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  th{
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-soft);
+  }
+
+  td.num{ font-weight: 600; }
+
+  footer{
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding: 18px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💎DiamondMetrics💎</h1>
+  <p>Diamond Export & Production Analytics</p>
+</header>
+
+<main>
+
+  <p class="intro">
+    Simulated monthly production and export data across Botswana's major diamond mines
+    (<strong>Jwaneng, Orapa, Letlhakane, Karowe, Damtshaa</strong>), with a
+    short-term export value forecast based on the recent trend.
+  </p>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Export Value</div>
+      <div class="kpi-value" id="kpiExportValue">—</div>
+      <div class="kpi-sub">last 18 months</div>
+    </div>
+    <div class="kpi-card grey">
+      <div class="kpi-label">Production Volume</div>
+      <div class="kpi-value" id="kpiCarats">—</div>
+      <div class="kpi-sub">total carats</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Price / Carat</div>
+      <div class="kpi-value" id="kpiPrice">—</div>
+      <div class="kpi-sub">blended across mines</div>
+    </div>
+    <div class="kpi-card grey">
+      <div class="kpi-label">YoY Growth</div>
+      <div class="kpi-value" id="kpiYoy">—</div>
+      <div class="kpi-sub">export value vs 12mo ago</div>
+    </div>
+  </div>
+
+  <section class="panel">
+    <h2>Export Value Trend & Forecast</h2>
+    <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+  </section>
+
+  <div class="panel-row">
+    <section class="panel half">
+      <h2>Production by Mine</h2>
+      <div class="chart-wrap small"><canvas id="mineChart"></canvas></div>
+    </section>
+    <section class="panel half">
+      <h2>Export Destinations</h2>
+      <div class="chart-wrap small"><canvas id="destChart"></canvas></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Average Price per Carat</h2>
+    <div class="chart-wrap small"><canvas id="priceChart"></canvas></div>
+  </section>
+
+  <section class="panel">
+    <h2>Monthly Production Records</h2>
+    <div class="filter-row" id="filterRow">
+      <button class="filter-btn active" data-mine="all">All Mines</button>
+      <button class="filter-btn" data-mine="Jwaneng">Jwaneng</button>
+      <button class="filter-btn" data-mine="Orapa">Orapa</button>
+      <button class="filter-btn" data-mine="Letlhakane">Letlhakane</button>
+      <button class="filter-btn" data-mine="Karowe">Karowe</button>
+      <button class="filter-btn" data-mine="Damtshaa">Damtshaa</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Month</th><th>Mine</th><th>Carats</th><th>Avg Price/Ct (BWP)</th><th>Export Value (BWP)</th></tr>
+        </thead>
+        <tbody id="recordBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer>DiamondMetrics💎 &middot; built by Sesame Dithupa</footer>
+
+<script>
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const N_MONTHS = 18;
+
+  // base monthly carats and price-per-carat ranges (BWP) per mine
+  const MINES = {
+    Jwaneng:    { baseCarats: 850000,  priceMin: 2000, priceMax: 2700, growth: 0.004 },
+    Orapa:      { baseCarats: 520000,  priceMin: 1000, priceMax: 1500, growth: 0.002 },
+    Letlhakane: { baseCarats: 160000,  priceMin: 800,  priceMax: 1200, growth: 0.001 },
+    Karowe:     { baseCarats: 28000,   priceMin: 4000, priceMax: 6500, growth: 0.006 },
+    Damtshaa:   { baseCarats: 6000,    priceMin: 700,  priceMax: 1000, growth: 0.000 },
+  };
+
+  const DESTINATIONS = { India: 58, Belgium: 16, UAE: 11, USA: 9, China: 6 };
+
+  function seededRandom(seed){
+    let s = seed;
+    return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  }
+  const rand = seededRandom(21);
+
+  // Generate monthly records per mine
+  const records = [];
+  for(let m = 0; m < N_MONTHS; m++){
+    const monthLabel = `${MONTH_NAMES[m % 12]} '${24 + Math.floor(m / 12)}`;
+    Object.entries(MINES).forEach(([mine, cfg]) => {
+      const trendFactor = 1 + cfg.growth * m;
+      const noise = 0.92 + rand() * 0.16;
+      const carats = Math.round(cfg.baseCarats * trendFactor * noise);
+      const price = Math.round(cfg.priceMin + rand() * (cfg.priceMax - cfg.priceMin));
+      const value = carats * price;
+      records.push({ month: m, monthLabel, mine, carats, price, value });
+    });
+  }
+
+  // Monthly totals (sum across mines)
+  const monthlyTotals = [];
+  for(let m = 0; m < N_MONTHS; m++){
+    const monthRecords = records.filter(r => r.month === m);
+    const totalValue = monthRecords.reduce((a, r) => a + r.value, 0);
+    const totalCarats = monthRecords.reduce((a, r) => a + r.carats, 0);
+    monthlyTotals.push({ month: m, label: monthRecords[0].monthLabel, value: totalValue, carats: totalCarats, avgPrice: totalValue / totalCarats });
+  }
+
+  // ---- KPIs ----
+  const totalExportValue = monthlyTotals.reduce((a, m) => a + m.value, 0);
+  const totalCarats = monthlyTotals.reduce((a, m) => a + m.carats, 0);
+  const avgPrice = totalExportValue / totalCarats;
+  const yoyGrowth = ((monthlyTotals[N_MONTHS - 1].value - monthlyTotals[N_MONTHS - 13].value) / monthlyTotals[N_MONTHS - 13].value) * 100;
+
+  function formatBillions(v){ return `P${(v / 1e9).toFixed(2)}B`; }
+  function formatMillionsCarats(v){ return `${(v / 1e6).toFixed(2)}M ct`; }
+
+  document.getElementById('kpiExportValue').textContent = formatBillions(totalExportValue);
+  document.getElementById('kpiCarats').textContent = formatMillionsCarats(totalCarats);
+  document.getElementById('kpiPrice').textContent = `P${Math.round(avgPrice).toLocaleString()}`;
+  document.getElementById('kpiYoy').textContent = `${yoyGrowth >= 0 ? '+' : ''}${yoyGrowth.toFixed(1)}%`;
+
+  const CHART_FONT = { color: '#7a8694' };
+
+  // ---- Trend chart with forecast ----
+  // simple linear regression on monthlyTotals[].value
+  const n = monthlyTotals.length;
+  const xs = monthlyTotals.map(m => m.month);
+  const ys = monthlyTotals.map(m => m.value);
+  const sumX = xs.reduce((a,b) => a+b, 0);
+  const sumY = ys.reduce((a,b) => a+b, 0);
+  const sumXY = xs.reduce((a,x,i) => a + x*ys[i], 0);
+  const sumXX = xs.reduce((a,x) => a + x*x, 0);
+  const slope = (n*sumXY - sumX*sumY) / (n*sumXX - sumX*sumX);
+  const intercept = (sumY - slope*sumX) / n;
+
+  const FORECAST_MONTHS = 3;
+  const trendLabels = monthlyTotals.map(m => m.label);
+  const trendActual = monthlyTotals.map(m => m.value);
+  const trendForecast = Array(n).fill(null);
+  trendForecast[n-1] = trendActual[n-1];
+
+  for(let i = 1; i <= FORECAST_MONTHS; i++){
+    const futureMonth = N_MONTHS - 1 + i;
+    trendLabels.push(`${MONTH_NAMES[futureMonth % 12]} '${24 + Math.floor(futureMonth/12)} (f)`);
+    trendActual.push(null);
+    trendForecast.push(slope * futureMonth + intercept);
+  }
+
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [
+        {
+          label: 'Export value (BWP)',
+          data: trendActual,
+          borderColor: '#2f5d8a',
+          backgroundColor: 'rgba(47,93,138,0.08)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 2,
+        },
+        {
+          label: 'Forecast',
+          data: trendForecast,
+          borderColor: '#9aa5b1',
+          borderDash: [6,4],
+          pointRadius: 2,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#2f5d8a', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { ...CHART_FONT, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
+        y: { ticks: { ...CHART_FONT, callback: v => `P${(v/1e9).toFixed(1)}B` }, grid: { color: '#eef0f3' }, beginAtZero: false }
+      }
+    }
+  });
+
+  // ---- Production by mine (totals) ----
+  const mineTotals = Object.keys(MINES).map(mine => ({
+    mine,
+    carats: records.filter(r => r.mine === mine).reduce((a,r) => a + r.carats, 0)
+  }));
+
+  new Chart(document.getElementById('mineChart'), {
+    type: 'bar',
+    data: {
+      labels: mineTotals.map(m => m.mine),
+      datasets: [{
+        data: mineTotals.map(m => Math.round(m.carats / 1e6 * 100) / 100),
+        backgroundColor: ['#2f5d8a','#4a90d9','#7a8694','#aebccb','#cfd7df']
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: CHART_FONT, grid: { display: false } },
+        y: { ticks: { ...CHART_FONT, callback: v => `${v}M` }, grid: { color: '#eef0f3' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // ---- Export destinations ----
+  new Chart(document.getElementById('destChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(DESTINATIONS),
+      datasets: [{
+        data: Object.values(DESTINATIONS),
+        backgroundColor: ['#2f5d8a','#4a90d9','#7a8694','#aebccb','#cfd7df'],
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#2f5d8a', font: { size: 10 }, boxWidth: 12 } } }
+    }
+  });
+
+  // ---- Price per carat trend ----
+  new Chart(document.getElementById('priceChart'), {
+    type: 'line',
+    data: {
+      labels: monthlyTotals.map(m => m.label),
+      datasets: [{
+        data: monthlyTotals.map(m => Math.round(m.avgPrice)),
+        borderColor: '#7a8694',
+        backgroundColor: 'rgba(122,134,148,0.08)',
+        tension: 0.3,
+        fill: true,
+        pointRadius: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { ...CHART_FONT, autoSkip: true, maxTicksLimit: 8 }, grid: { display: false } },
+        y: { ticks: { ...CHART_FONT, callback: v => `P${v}` }, grid: { color: '#eef0f3' }, beginAtZero: false }
+      }
+    }
+  });
+
+  // ---- Records table ----
+  function renderTable(mineFilter){
+    const body = document.getElementById('recordBody');
+    body.innerHTML = '';
+    const filtered = mineFilter === 'all' ? records : records.filter(r => r.mine === mineFilter);
+
+    filtered.slice(0, 40).forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r.monthLabel}</td>
+        <td>${r.mine}</td>
+        <td class="num">${r.carats.toLocaleString()}</td>
+        <td class="num">P${r.price.toLocaleString()}</td>
+        <td class="num">P${r.value.toLocaleString()}</td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById('filterRow').addEventListener('click', (e) => {
+    if(!e.target.classList.contains('filter-btn')) return;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    renderTable(e.target.dataset.mine);
+  });
+
+  renderTable('all');
+</script>
+
+</body>
+</html>
